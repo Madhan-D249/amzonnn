@@ -53,6 +53,14 @@ pipeline {
                     docker push ${DOCKERHUB_USERNAME}/phonepe
                     """
                 }
+                post {
+                success{
+                    echo "push is get success"
+                }
+                failure{
+                    echo "pushing is failure"
+                }
+            
             }
                 
         }
@@ -63,6 +71,14 @@ pipeline {
                 docker rmi -f phonepe
                 """
             }
+            post {
+                success{
+                    echo ""
+                }
+                failure{
+                    echo "image not built"
+                }
+            }
         }
         stage("stop and restart"){
             steps {
@@ -70,6 +86,14 @@ pipeline {
                 docker rm -f app
                 docker run -it -d --name app -p 8081:8080 ${DOCKERHUB_USERNAME}/phonepe
                 """
+            }
+            post {
+                success{
+                    echo "image build successfully"
+                }
+                failure{
+                    echo "image not built"
+                }
             }
         }
     }
