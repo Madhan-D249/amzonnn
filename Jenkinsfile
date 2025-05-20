@@ -64,7 +64,8 @@ pipeline {
             }
                 
         }
-        stage("remove docker image locally"){
+        stage("remove docker image locally")
+        {
             steps{
                 sh"""
                 docker rmi -f ${DOCKERHUB_USERNAME}/phonepe
