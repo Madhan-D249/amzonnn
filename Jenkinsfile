@@ -3,107 +3,106 @@ pipeline {
     tools {
         maven 'maven'
     }
-    environment{
+    environment {
         DOCKERHUB_USERNAME = "madhand249"
+        DOCKER_IMAGE_NAME = "phonepe"
     }
     stages {
-        stage("clean") {
+        stage("Clean") {
             steps {
                 sh 'mvn clean'
             }
         }
-        stage("validate") {
+        stage("Validate") {
             steps {
                 sh 'mvn validate'
             }
         }
-        stage("test") {
+        stage("Test") {
             steps {
                 sh 'mvn test'
             }
         }
-        stage("package") {
+        stage("Package") {
             steps {
                 sh 'mvn package'
             }
             post {
                 success {
-                    echo "build successfull"
+                    echo "Build successful"
                 }
             }
         }
-        stage("build docker images") {
+        stage("Build Docker Image") {
             steps {
-                sh 'docker build -t phonepe .'
+                sh 'docker build -t ${DOCKER_IMAGE_NAME} .'
             }
             post {
-                success{
-                    echo "image build successfully"
+                success {
+                    echo "Docker image built successfully"
                 }
-                failure{
-                    echo "image not built"
+                failure {
+                    echo "Docker image build failed"
                 }
             }
         }
-        stage("push to docker hub"){
-            steps{
+        stage("Push to Docker Hub") {
+            steps {
                 script {
-                    sh"""
-                    docker tag phonepe ${DOCKERHUB_USERNAME}/phonepe
-                    docker push ${DOCKERHUB_USERNAME}/phonepe
+                    sh """
+                    docker tag ${DOCKER_IMAGE_NAME} ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
+                    docker push ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
                     """
                 }
-                post {
-                success{
-                    echo "push is get success"
-                }
-                failure{
-                    echo "pushing is failure"
-                }
-            
-            }
-                
-        }
-        stage("remove docker image locally")
-        {
-            steps{
-                sh"""
-                docker rmi -f ${DOCKERHUB_USERNAME}/phonepe
-                docker rmi -f phonepe
-                """
             }
             post {
-                success{
-                    echo "remove sucess"
+                success {
+                    echo "Image pushed to Docker Hub successfully"
                 }
-                failure{
-                    echo "remove is failure"
+                failure {
+                    echo "Failed to push image to Docker Hub"
                 }
             }
         }
-        stage("stop and restart"){
+        stage("Remove Local Docker Images") {
             steps {
-                sh"""
-                docker rm -f app
-                docker run -it -d --name app -p 8081:8080 ${DOCKERHUB_USERNAME}/phonepe
+                sh """
+                docker rmi -f ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
+                docker rmi -f ${DOCKER_IMAGE_NAME}
                 """
             }
             post {
-                success{
-                    echo "i stoped"
+                success {
+                    echo "Docker images removed locally"
                 }
-                failure{
-                    echo "failure to start"
+                failure {
+                    echo "Failed to remove Docker images locally"
+                }
+            }
+        }
+        stage("Stop and Restart Container") {
+            steps {
+                sh """
+                docker rm -f app || true
+                docker run -it -d --name app -p 8081:8080 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
+                """
+            }
+            post {
+                success {
+                    echo "Container restarted successfully"
+                }
+                failure {
+                    echo "Failed to restart container"
                 }
             }
         }
     }
     post {
         success {
-            echo "deployemnt successfull"
+            echo "Deployment successful"
         }
         failure {
-            echo "deployment is failure"
+            echo "Deployment failed"
         }
     }
 }
