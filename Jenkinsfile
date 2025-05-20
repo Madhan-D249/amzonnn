@@ -1,28 +1,34 @@
 pipeline {
     agent any
+
     tools {
         maven 'maven'
     }
+
     environment {
-        DOCKERHUB_USERNAME = "madhand249"
         DOCKER_IMAGE_NAME = "phonepe"
+        DOCKER_TAG = "latest"
     }
+
     stages {
         stage("Clean") {
             steps {
                 sh 'mvn clean'
             }
         }
+
         stage("Validate") {
             steps {
                 sh 'mvn validate'
             }
         }
+
         stage("Test") {
             steps {
                 sh 'mvn test'
             }
         }
+
         stage("Package") {
             steps {
                 sh 'mvn package'
@@ -33,9 +39,10 @@ pipeline {
                 }
             }
         }
+
         stage("Build Docker Image") {
             steps {
-                sh 'docker build -t ${DOCKER_IMAGE_NAME} .'
+                sh 'docker build -t ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} .'
             }
             post {
                 success {
@@ -46,12 +53,21 @@ pipeline {
                 }
             }
         }
+
+        stage("Docker Login") {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'madhand249', passwordVariable: 'madhan249@@@')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                }
+            }
+        }
+
         stage("Push to Docker Hub") {
             steps {
                 script {
                     sh """
-                    docker tag ${DOCKER_IMAGE_NAME} ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
-                    docker push ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
+                    docker tag ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
+                    docker push $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                     """
                 }
             }
@@ -64,11 +80,12 @@ pipeline {
                 }
             }
         }
+
         stage("Remove Local Docker Images") {
             steps {
                 sh """
-                docker rmi -f ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
-                docker rmi -f ${DOCKER_IMAGE_NAME}
+                docker rmi -f $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || true
+                docker rmi -f ${DOCKER_IMAGE_NAME}:${DOCKER_TAG} || true
                 """
             }
             post {
@@ -80,11 +97,12 @@ pipeline {
                 }
             }
         }
+
         stage("Stop and Restart Container") {
             steps {
                 sh """
                 docker rm -f app || true
-                docker run -it -d --name app -p 8081:8080 ${DOCKERHUB_USERNAME}/${DOCKER_IMAGE_NAME}
+                docker run -it -d --name app -p 8081:8080 $DOCKER_USER/${DOCKER_IMAGE_NAME}:${DOCKER_TAG}
                 """
             }
             post {
@@ -97,6 +115,7 @@ pipeline {
             }
         }
     }
+
     post {
         success {
             echo "Deployment successful"
