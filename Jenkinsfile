@@ -73,10 +73,10 @@ pipeline {
             }
             post {
                 success{
-                    echo ""
+                    echo "remove sucess"
                 }
                 failure{
-                    echo "image not built"
+                    echo "remove is failure"
                 }
             }
         }
@@ -89,10 +89,10 @@ pipeline {
             }
             post {
                 success{
-                    echo "image build successfully"
+                    echo "i stoped"
                 }
                 failure{
-                    echo "image not built"
+                    echo "failure to start"
                 }
             }
         }
